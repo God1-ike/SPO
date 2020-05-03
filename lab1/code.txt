@@ -1,0 +1,13 @@
+int 4i = 1;
+switch (a) {
+    case 1:
+        if i >= 10          // is so good
+            i = i + 2;
+        break;
+    case 2:
+        i = i + 3;
+        break;
+    default:
+        i = i + 11;
+        break;
+}
