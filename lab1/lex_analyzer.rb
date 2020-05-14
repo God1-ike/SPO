@@ -10,6 +10,7 @@ module LexAnalyzer
   WORDS = { operator: %w[case switch break default if else],
             type: ['int'] }.freeze
   @key = ''
+
   def self.analyze(line)
     nex_tok(line)
   end
@@ -41,7 +42,8 @@ module LexAnalyzer
   end
 
   def self.nex_tok(data)
-    result_line = []
+    result_line = {}
+    counter = { id: 0, num: 0, arithmetic_sign: 0, delimiter: 0 }
     i = 0
     data.chomp!
     pred_symvol = ''
@@ -53,11 +55,16 @@ module LexAnalyzer
         tmp = i + 1 < data.size ? data[i] + data[i + 1] : 'is_not_big_symvol'
 
         if symvol?(tmp)
-          result_line.push({ @key => tmp })
+          result_line[@key] = tmp
           i += 1
           pred_symvol = tmp
         else
-          result_line.push({ @key => data[i] })
+          if counter.key?(@key)
+            counter[@key] += 1
+            result_line[:"#{@key}_#{counter[@key]}"] = data[i]
+          else
+            result_line[@key] = data[i]
+          end
         end
       else
         if pred_symvol == '//'
@@ -66,7 +73,7 @@ module LexAnalyzer
             tmp += data[i]
             i += 1
           end
-          result_line.push({ text: tmp })
+          result_line[:text] = tmp
         else
           tmp = data[i]
           j = i + 1
@@ -76,11 +83,13 @@ module LexAnalyzer
           end
           i = j - 1
           if word?(tmp)
-            result_line.push({ @key => tmp })
+            result_line[@key] = tmp
           elsif is_number?(tmp)
-            result_line.push({ num: tmp })
+            result_line[:"num_#{counter[:num]}"] = tmp
+            counter[:num] += 1
           else
-            result_line.push({ id: tmp })
+            result_line[:"id_#{counter[:id]}"] = tmp
+            counter[:id] += 1
           end
         end
 

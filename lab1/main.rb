@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require './analyzer.rb'
+require 'tree'
+require './lex_analyzer.rb'
 
 def self.check?
   file = File.new('code.txt')
@@ -13,9 +14,7 @@ end
 
 def out(result)
   (0...result.size).each do |i|
-    (0...result[i].size).each do |j|
-      result[i][j].each { |key, value| puts "#{i}) #{key} => #{value}" }
-    end
+    result[i].each { |key, value| puts "#{i}) #{key} => #{value}" }
   end
 end
 
@@ -27,9 +26,11 @@ def run
     file = File.new('code.txt')
     file.each do |line|
       result.push(LexAnalyzer.analyze(line))
+      result.pop(1) if result.last.empty?
     end
     file.close
     out(result)
+    puts result
   end
 end
 
