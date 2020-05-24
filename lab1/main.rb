@@ -30,7 +30,7 @@ def run
     end
     file.close
     out(result)
-    puts result
+    p result
   end
 end
 

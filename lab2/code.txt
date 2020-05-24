@@ -8,9 +8,6 @@ if (i > 2) {
     i = 11 - 2;
     i = b + 11 / 1;
 }
-
-if (i < 2)
-    i = i + 2
     
 switch (2){
     case 1:

@@ -5,6 +5,7 @@ module TreeFormator
   @lvl = []
   @if_counter = []
   @switch_value
+  @errors = []
   # переход к последнему детскому узлу, у даном узле
   def self.down_poz(poz)
     poz.children[-1]
@@ -40,14 +41,14 @@ module TreeFormator
   # если да то смещает положение на узел выше и удаляет историю ковычек
   def self.clouse_delimeter(poz, data, i)
     if @lvl.empty?
-      puts "Отсутствует открывающаяся ковычка строка: #{i + 1}"
+      @errors.push("Отсутствует открывающаяся ковычка для строки: #{i + 1}")
     elsif @lvl.last[:poz] == 'more'
       poz = up_poz(poz)
       @lvl.pop(1)
       @if_counter.pop(1)
       poz = up_poz(poz) unless data[i].value?('else')
     else
-      puts "Ошибка в строке, отсутствует операция #{i + 1}"
+      @errors.push("Ошибка в строке #{i + 1}, отсутствует операция ")
     end
     poz
   end
@@ -136,8 +137,9 @@ module TreeFormator
   # Основной код программы, который рекурсивно проверяет, что происходит в строке
   # формирует в зависимости от этого ствою часть деревакги
   def self.node_create(data, i, poz)
-    return 1 if i == data.size
-
+    if i == data.size || i == 1 
+      return -1 
+    end
     poz = one_string_compl(poz, data, i) unless @lvl.empty?
 
     if data[i][:operator] == 'if'
@@ -208,13 +210,17 @@ module TreeFormator
       poz = clouse_delimeter(poz, data, i)
       node_create(data, i + 1, poz)
     else
-      puts 'unknown comand'
+      @errors.push("неизвестная операция в строке: #{i+1}")
     end
   end
 
   def self.format(data)
     root_node = Tree::TreeNode.new('ROOT', 'Содержимое ROOT')
     node_create(data, 0, root_node)
-    root_node.print_tree
+    if @errors.empty?
+      root_node.print_tree
+    else
+      puts @errors
+    end 
   end
 end
