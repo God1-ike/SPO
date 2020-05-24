@@ -1,11 +1,28 @@
 # frozen_string_literal: true
 
 require 'tree'
+require './string.rb'
+
 module TreeFormator
   @lvl = []
   @if_counter = []
-  @switch_value
   @errors = []
+  @switch_value
+
+  def self.check_syntax(data, i)
+    return 0 if ((data[i][:delimiter_1] == '}' && data[i].size == 1) || data[i].empty?)
+
+    str = ''
+    data[i].each do |_key, value|
+      str += value + ' '
+    end
+    p str
+    unless str.contains_a_switch? || str.contains_a_case? || str.contains_a_as_op? ||
+           str.contains_a_if? || str.contains_a_break? || str.contains_a_else? || str.contains_a_default?
+      @errors.push("invalid command string: #{i + 1}")
+    end
+  end
+
   # переход к последнему детскому узлу, у даном узле
   def self.down_poz(poz)
     poz.children[-1]
@@ -31,7 +48,7 @@ module TreeFormator
     if data[i].value?('{')
       @lvl.push(poz: 'more', compl: false)
       @if_counter.push(false)
-    else
+    elsif data[i].value?('if') || data[i].value?('else')
       @lvl.push(poz: 'one', compl: false)
       @if_counter.push(false)
     end
@@ -126,7 +143,6 @@ module TreeFormator
   end
 
   def self.search_num_or_id(data, i)
-    # p data[i]
     if data[i].key?(:num_0)
       data[i][:num_0]
     elsif data[i].key?(:id_0)
@@ -137,12 +153,14 @@ module TreeFormator
   # Основной код программы, который рекурсивно проверяет, что происходит в строке
   # формирует в зависимости от этого ствою часть деревакги
   def self.node_create(data, i, poz)
-    if i == data.size || i == 1 
-      return -1 
-    end
+    return -1 if i == data.size
+    poz = clouse_delimeter(poz, data, i) if data[i].value?('}')
+    opening_curly(data, i)
+    check_syntax(data, i)
     poz = one_string_compl(poz, data, i) unless @lvl.empty?
-
-    if data[i][:operator] == 'if'
+    if data[i].empty?
+      node_create(data, i + 1, poz)
+    elsif data[i][:operator] == 'if'
       poz << Tree::TreeNode.new("if(#{i + 1})", 'if')
       poz = down_poz(poz)
       poz << Tree::TreeNode.new("Compare: #{data[i][:conditional_operator]}",
@@ -151,12 +169,10 @@ module TreeFormator
       search_variable(data, i, poz)
       poz = up_poz(poz)
       poz << Tree::TreeNode.new('if-body', 'if-body')
-      opening_curly(data, i)
-      node_create(data, i + 1, poz.children[-1])
+      poz = down_poz(poz)
+      node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'else'
-      poz = clouse_delimeter(poz, data, i) if data[i].value?('}')
       poz << Tree::TreeNode.new('else-body', 'else-body')
-      opening_curly(data, i)
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i].key?(:type)
@@ -183,7 +199,6 @@ module TreeFormator
           @switch_value = { value: value, str: i }
         end
       end
-      opening_curly(data, i)
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'case'
@@ -207,10 +222,9 @@ module TreeFormator
       poz = up_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i].value?('}')
-      poz = clouse_delimeter(poz, data, i)
       node_create(data, i + 1, poz)
     else
-      @errors.push("неизвестная операция в строке: #{i+1}")
+      @errors.push("неизвестная операция в строке: #{i + 1}")
     end
   end
 
@@ -221,6 +235,6 @@ module TreeFormator
       root_node.print_tree
     else
       puts @errors
-    end 
+    end
   end
 end
