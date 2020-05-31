@@ -2,6 +2,7 @@
 
 require 'tree'
 require './string.rb'
+require './check_variable.rb'
 
 module TreeFormator
   @lvl = []
@@ -16,7 +17,6 @@ module TreeFormator
     data[i].each do |_key, value|
       str += value + ' '
     end
-    p str
     unless str.contains_a_switch? || str.contains_a_case? || str.contains_a_as_op? ||
            str.contains_a_if? || str.contains_a_break? || str.contains_a_else? || str.contains_a_default?
       @errors.push("invalid command string: #{i + 1}")
@@ -37,7 +37,12 @@ module TreeFormator
   def self.search_variable(data, i, poz)
     data[i].each do |key, value|
       if key.to_s.include?('id') || key.to_s.include?('num')
-        poz << Tree::TreeNode.new("variable: #{value}", { key: value })
+        p key.to_s
+        if data[i].has_key?(:type) && key.to_s == 'id_0'
+          poz << Tree::TreeNode.new("variable: #{value}", { type: data[i][:type], key: key.to_s, val: value })
+        else 
+          poz << Tree::TreeNode.new("variable: #{value}", { key: key.to_s, val: value })
+        end
       end
     end
   end
@@ -95,11 +100,11 @@ module TreeFormator
   end
 
   # добавляет в дерево элемент, в зависимости от того, является ли она узлом или нет
-  def self.add_variable_arifmetic(i, values)
+  def self.add_variable_arifmetic(i, values, keys)
     if values[i].class == Tree::TreeNode
       values[i]
     else
-      Tree::TreeNode.new("variable(#{i}): #{values[i]}", values[i])
+      Tree::TreeNode.new("variable(#{i}): #{values[i]}", { key: keys[i].to_s, val:values[i]})
     end
   end
 
@@ -107,19 +112,24 @@ module TreeFormator
   def self.arifmetic(data, i, _poz)
     arithmetic_sign = []
     values = []
+    keys = []
     data[i].each do |key, value|
       if key.to_s.include?('arithmetic_sign')
         arithmetic_sign.push({ value: value, prior: prior(value) })
       end
-      values.push(value) if key.to_s.include?('id') || key.to_s.include?('num')
+      if key.to_s.include?('id') || key.to_s.include?('num')
+        values.push(value)
+        keys.push(key)
+      end
     end
     i = 0
     values.delete_at(0)
+    keys.delete_at(0)
     while i < arithmetic_sign.size
       if arithmetic_sign[i][:prior] == 1
         tmp_poz = Tree::TreeNode.new("operation: #{arithmetic_sign[i][:value]}", arithmetic_sign[i][:value])
-        tmp_poz << add_variable_arifmetic(i, values)
-        tmp_poz << add_variable_arifmetic(i + 1, values)
+        tmp_poz << add_variable_arifmetic(i, values, keys)
+        tmp_poz << add_variable_arifmetic(i + 1, values, keys)
 
         arithmetic_sign.delete_at(i)
         values.delete_at(i + 1)
@@ -132,21 +142,22 @@ module TreeFormator
     i = 0
     while i < arithmetic_sign.size
       tmp_poz = Tree::TreeNode.new("operation: #{arithmetic_sign[i][:value]}", arithmetic_sign[i][:value])
-      tmp_poz << add_variable_arifmetic(i, values)
-      tmp_poz << add_variable_arifmetic(i + 1, values)
+      tmp_poz << add_variable_arifmetic(i, values, keys)
+      tmp_poz << add_variable_arifmetic(i + 1, values, keys)
 
       arithmetic_sign.delete_at(i)
       values.delete_at(i + 1)
+      keys.delete_at(i + 1)
       values[i] = tmp_poz
     end
-    values[0]
+    {key: keys[0], val: values[0]}
   end
 
   def self.search_num_or_id(data, i)
     if data[i].key?(:num_0)
-      data[i][:num_0]
+      {key: 'num', val: data[i][:num_0]}
     elsif data[i].key?(:id_0)
-      data[i][:id_0]
+      {key: 'id', val: data[i][:id_0]}
     end
   end
 
@@ -183,12 +194,12 @@ module TreeFormator
     elsif data[i].key?(:assignment_operation)
       poz << Tree::TreeNode.new("assign(#{i})", 'assign')
       poz = down_poz(poz)
-      poz << Tree::TreeNode.new("variable(#{i}): #{data[i][:id_0]}", data[i][:id_0])
+      poz << Tree::TreeNode.new("variable(#{i}): #{data[i][:id_0]}", {key: 'id', val: data[i][:id_0]})
       tmp = arifmetic(data, i, poz)
-      poz << if tmp.class == String
-               Tree::TreeNode.new("values(#{i}): #{tmp}", tmp)
+      poz << if tmp[:val].class == String
+               Tree::TreeNode.new("variable(#{i}): #{tmp[:val]}", tmp)
              else
-               tmp
+               tmp[:val]
              end
       poz = up_poz(poz)
       node_create(data, i + 1, poz)
@@ -196,7 +207,7 @@ module TreeFormator
       poz << Tree::TreeNode.new("switch(#{i})", 'switch')
       data[i].each do |key, value|
         if key.to_s.include?('id') || key.to_s.include?('num')
-          @switch_value = { value: value, str: i }
+          @switch_value = { value: value, str: i , key: key.to_s}
         end
       end
       poz = down_poz(poz)
@@ -207,8 +218,8 @@ module TreeFormator
       poz << Tree::TreeNode.new('Compare: ==', '==')
       poz = down_poz(poz)
       poz << Tree::TreeNode.new("variable(#{@switch_value[:str]}): #{@switch_value[:value]}",
-                                @switch_value[:value])
-      poz << Tree::TreeNode.new("variable(#{i}): #{search_num_or_id(data, i)}", search_num_or_id(data, i))
+                                {key: @switch_value[:key], val:@switch_value[:value]})
+      poz << Tree::TreeNode.new("variable(#{i}): #{search_num_or_id(data, i)[:val]}", search_num_or_id(data, i))
       poz = up_poz(poz)
       poz << Tree::TreeNode.new('case-body', 'case-body')
       node_create(data, i + 1, poz)
@@ -231,6 +242,7 @@ module TreeFormator
   def self.format(data)
     root_node = Tree::TreeNode.new('ROOT', 'Содержимое ROOT')
     node_create(data, 0, root_node)
+    VarChecking.check(root_node)
     if @errors.empty?
       root_node.print_tree
     else

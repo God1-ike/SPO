@@ -30,8 +30,7 @@ def run
       # result.pop(1) if result.last.empty?
     end
     file.close
-    out(result)
-    # p result
+    # out(result)
     TreeFormator.format(result)
   end
 end
