@@ -5,13 +5,14 @@ require './string.rb'
 require './check_variable.rb'
 
 module TreeFormator
-  @lvl = []
+  @size_lvl = []
   @if_counter = []
   @errors = []
   @switch_value
+  @lvl = 0
 
   def self.check_syntax(data, i)
-    return 0 if ((data[i][:delimiter_1] == '}' && data[i].size == 1) || data[i].empty?)
+    return 0 if (data[i][:delimiter_1] == '}' && data[i].size == 1) || data[i].empty?
 
     str = ''
     data[i].each do |_key, value|
@@ -25,25 +26,26 @@ module TreeFormator
 
   # переход к последнему детскому узлу, у даном узле
   def self.down_poz(poz)
+    @lvl += 1
     poz.children[-1]
   end
 
   # переход к родителю данного узла
   def self.up_poz(poz)
+    @lvl -= 1
     poz.parent
   end
 
   # перебор токенов в строке, и формирования для узлов для чисел и переменных
   def self.search_variable(data, i, poz)
     data[i].each do |key, value|
-      if key.to_s.include?('id') || key.to_s.include?('num')
-        p key.to_s
-        if data[i].has_key?(:type) && key.to_s == 'id_0'
-          poz << Tree::TreeNode.new("variable: #{value}", { type: data[i][:type], key: key.to_s, val: value })
-        else 
-          poz << Tree::TreeNode.new("variable: #{value}", { key: key.to_s, val: value })
-        end
-      end
+      next unless key.to_s.include?('id') || key.to_s.include?('num')
+      chec_id(key, value, i)
+      poz << if data[i].key?(:type) && key.to_s == 'id_0'
+               Tree::TreeNode.new("variable: #{value}", { type: data[i][:type], key: key.to_s, val: value, lvl: @lvl })
+             else
+               Tree::TreeNode.new("variable: #{value}", { key: key.to_s, val: value, lvl: @lvl })
+             end
     end
   end
 
@@ -51,10 +53,10 @@ module TreeFormator
   # в соответсвии формируется данные в временной переменной
   def self.opening_curly(data, i)
     if data[i].value?('{')
-      @lvl.push(poz: 'more', compl: false)
+      @size_lvl.push(poz: 'more', compl: false)
       @if_counter.push(false)
     elsif data[i].value?('if') || data[i].value?('else')
-      @lvl.push(poz: 'one', compl: false)
+      @size_lvl.push(poz: 'one', compl: false)
       @if_counter.push(false)
     end
   end
@@ -62,11 +64,11 @@ module TreeFormator
   # проверка на то, была ли открывающая скобка, и является ли она последней
   # если да то смещает положение на узел выше и удаляет историю ковычек
   def self.clouse_delimeter(poz, data, i)
-    if @lvl.empty?
+    if @size_lvl.empty?
       @errors.push("Отсутствует открывающаяся ковычка для строки: #{i + 1}")
-    elsif @lvl.last[:poz] == 'more'
+    elsif @size_lvl.last[:poz] == 'more'
       poz = up_poz(poz)
-      @lvl.pop(1)
+      @size_lvl.pop(1)
       @if_counter.pop(1)
       poz = up_poz(poz) unless data[i].value?('else')
     else
@@ -78,13 +80,13 @@ module TreeFormator
   # если посленее условие было без ковычек, и оно было выполнено, то чистит
   # историю данного условия, иначе помещает как выполенео
   def self.one_string_compl(poz, data, i)
-    if @lvl.last[:poz] == 'one'
-      if @lvl.last[:compl]
+    if @size_lvl.last[:poz] == 'one'
+      if @size_lvl.last[:compl]
         poz = up_poz(poz)
-        @lvl.pop(1)
+        @size_lvl.pop(1)
         poz = up_poz(poz) unless data[i].value?('else')
       else
-        @lvl.last[:compl] = true
+        @size_lvl.last[:compl] = true
       end
     end
     poz
@@ -104,7 +106,7 @@ module TreeFormator
     if values[i].class == Tree::TreeNode
       values[i]
     else
-      Tree::TreeNode.new("variable(#{i}): #{values[i]}", { key: keys[i].to_s, val:values[i]})
+      Tree::TreeNode.new("variable(#{i}): #{values[i]}", { key: keys[i].to_s, val: values[i], lvl: @lvl, str: i })
     end
   end
 
@@ -114,9 +116,7 @@ module TreeFormator
     values = []
     keys = []
     data[i].each do |key, value|
-      if key.to_s.include?('arithmetic_sign')
-        arithmetic_sign.push({ value: value, prior: prior(value) })
-      end
+      arithmetic_sign.push({ value: value, prior: prior(value) }) if key.to_s.include?('arithmetic_sign')
       if key.to_s.include?('id') || key.to_s.include?('num')
         values.push(value)
         keys.push(key)
@@ -150,25 +150,31 @@ module TreeFormator
       keys.delete_at(i + 1)
       values[i] = tmp_poz
     end
-    {key: keys[0], val: values[0]}
+    { key: keys[0], val: values[0], lvl: @lvl }
   end
 
   def self.search_num_or_id(data, i)
     if data[i].key?(:num_0)
-      {key: 'num', val: data[i][:num_0]}
+      { key: 'num', val: data[i][:num_0], lvl: @lvl }
     elsif data[i].key?(:id_0)
-      {key: 'id', val: data[i][:id_0]}
+      chec_id('id', data[i][:id_0], i)
+      { key: 'id', val: data[i][:id_0], lvl: @lvl }
     end
+  end
+
+  def self.chec_id(key, val, i)
+    @errors.push("not a valid variable name str: #{i+1}") if key.to_s.include?('id') && !val.contains_a_id?
   end
 
   # Основной код программы, который рекурсивно проверяет, что происходит в строке
   # формирует в зависимости от этого ствою часть деревакги
   def self.node_create(data, i, poz)
     return -1 if i == data.size
+
     poz = clouse_delimeter(poz, data, i) if data[i].value?('}')
     opening_curly(data, i)
     check_syntax(data, i)
-    poz = one_string_compl(poz, data, i) unless @lvl.empty?
+    poz = one_string_compl(poz, data, i) unless @size_lvl.empty?
     if data[i].empty?
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'if'
@@ -194,9 +200,11 @@ module TreeFormator
     elsif data[i].key?(:assignment_operation)
       poz << Tree::TreeNode.new("assign(#{i})", 'assign')
       poz = down_poz(poz)
-      poz << Tree::TreeNode.new("variable(#{i}): #{data[i][:id_0]}", {key: 'id', val: data[i][:id_0]})
+      chec_id('id', data[i][:id_0], i)
+      poz << Tree::TreeNode.new("variable(#{i}): #{data[i][:id_0]}", { key: 'id', val: data[i][:id_0], lvl: @lvl })
       tmp = arifmetic(data, i, poz)
       poz << if tmp[:val].class == String
+               chec_id(tmp[:key], tmp[:val], i)
                Tree::TreeNode.new("variable(#{i}): #{tmp[:val]}", tmp)
              else
                tmp[:val]
@@ -206,9 +214,8 @@ module TreeFormator
     elsif data[i][:operator] == 'switch'
       poz << Tree::TreeNode.new("switch(#{i})", 'switch')
       data[i].each do |key, value|
-        if key.to_s.include?('id') || key.to_s.include?('num')
-          @switch_value = { value: value, str: i , key: key.to_s}
-        end
+        chec_id(key, value, i)
+        @switch_value = { value: value, str: i, key: key.to_s } if key.to_s.include?('id') || key.to_s.include?('num')
       end
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
@@ -218,7 +225,7 @@ module TreeFormator
       poz << Tree::TreeNode.new('Compare: ==', '==')
       poz = down_poz(poz)
       poz << Tree::TreeNode.new("variable(#{@switch_value[:str]}): #{@switch_value[:value]}",
-                                {key: @switch_value[:key], val:@switch_value[:value]})
+                                { key: @switch_value[:key], val: @switch_value[:value], lvl: @lvl })
       poz << Tree::TreeNode.new("variable(#{i}): #{search_num_or_id(data, i)[:val]}", search_num_or_id(data, i))
       poz = up_poz(poz)
       poz << Tree::TreeNode.new('case-body', 'case-body')
