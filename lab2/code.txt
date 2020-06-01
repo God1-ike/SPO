@@ -1,6 +1,5 @@
-int i = 1 ;
 int b = 1 ;
-
+int i = 1 ;
 
 if (i > 2343) {
     if (i < 2)

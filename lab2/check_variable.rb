@@ -5,6 +5,7 @@ require 'tree'
 
 module VarChecking
   @errors = []
+  @lvl_tmp = 0
   def self.chec_id(key, val, i)
     if key.to_s.include?('id')
       @errors.push("не валидное название переменной в строке: #{i + 1}") unless val.contains_a_id?
@@ -21,17 +22,39 @@ module VarChecking
       id_variable.each do |array|
         return 0 if array.key?(node.content[:val])
       end
-      @errors.push("неизвестная переманная в строке: #{node.content[:str] + 1}")
+      @errors.push("неизвестная переменная в строке: #{node.content[:str] + 1}")
     end
+  end
+
+  def self.change_lvl(node, id_variable)
+    @lvl_tmp = node.content[:lvl] if node.content.key?(:oper)
+
+    id_variable.each do |array|
+      id_variable.delete(array) if array.values[0][:lvl] > @lvl_tmp
+    end
+    id_variable
+  end
+
+  def self.in_array?(id_variable, node)
+    id_variable.each do |hash|
+      if hash.has_key?(node.content[:val])
+        @errors.push("Данная перменная(#{node.content[:val]}) уже объявлена строка: #{node.content[:str]}")
+        return false
+      end
+    end
+    true
   end
 
   def self.check(tree)
     id_variable = []
     tree.each do |node|
-      if node.content.class == Hash && node.content.key?(:type)
-        id_variable.push(getting_date(node.content))
-      elsif node.content.class == Hash && node.content.key?(:key)
-        check_array(node, id_variable)
+      if node.content.class == Hash
+        if node.content.key?(:type) && in_array?(id_variable, node)
+          id_variable.push(getting_date(node.content))
+        elsif node.content.key?(:key)
+          id_variable = change_lvl(node, id_variable)
+          check_array(node, id_variable)
+        end
       end
     end
     @errors

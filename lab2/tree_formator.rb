@@ -8,7 +8,7 @@ module TreeFormator
   @size_lvl = []
   @if_counter = []
   @errors = []
-  @switch_value
+  @switch_value = {}
   @lvl = 0
 
   def self.check_syntax(data, i)
@@ -42,9 +42,9 @@ module TreeFormator
       next unless key.to_s.include?('id') || key.to_s.include?('num')
 
       poz << if data[i].key?(:type) && key.to_s == 'id_0'
-               Tree::TreeNode.new("variable: #{value}", { type: data[i][:type], key: convert_key(key.to_s), val: value, lvl: @lvl, str: i })
+               Tree::TreeNode.new("variable: #{value}", { type: data[i][:type], key: convert_key(key.to_s), val: value, lvl: @lvl - 1, str: i })
              else
-               Tree::TreeNode.new("variable: #{value}", { key: convert_key(key.to_s), val: value, lvl: @lvl, str: i })
+               Tree::TreeNode.new("variable: #{value}", { key: convert_key(key.to_s), val: value, lvl: @lvl - 1, str: i })
              end
     end
   end
@@ -181,27 +181,28 @@ module TreeFormator
     if data[i].empty?
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'if'
-      poz << Tree::TreeNode.new("if(#{i + 1})", 'if')
+      poz << Tree::TreeNode.new("if(#{i + 1})", {oper:'if', lvl: @lvl})
       poz = down_poz(poz)
       poz << Tree::TreeNode.new("Compare: #{data[i][:conditional_operator]}",
                                 { conditional_operator: data[i][:conditional_operator] })
       poz = down_poz(poz)
       search_variable(data, i, poz)
       poz = up_poz(poz)
-      poz << Tree::TreeNode.new('if-body', 'if-body')
+      poz << Tree::TreeNode.new('if-body', {oper: 'if-body', lvl: @lvl})
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'else'
-      poz << Tree::TreeNode.new('else-body', 'else-body')
+      poz << Tree::TreeNode.new('else-body', {oper: 'else-body', lvl: @lvl})
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i].key?(:type)
-      poz << Tree::TreeNode.new("#{data[i][:type]}(#{i})", data[i][:type])
+      poz << Tree::TreeNode.new("#{data[i][:type]}(#{i})", {oper: data[i][:type], lvl: @lvl})
       poz = down_poz(poz)
       search_variable(data, i, poz)
+      poz = up_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i].key?(:assignment_operation)
-      poz << Tree::TreeNode.new("assign(#{i})", 'assign')
+      poz << Tree::TreeNode.new("assign(#{i})", {oper: 'assign', lvl: @lvl})
       poz = down_poz(poz)
       poz << Tree::TreeNode.new("variable(#{i}): #{data[i][:id_0]}", { key: 'id', val: data[i][:id_0], lvl: @lvl, str: i })
       tmp = arifmetic(data, i, poz, i)
@@ -213,7 +214,7 @@ module TreeFormator
       poz = up_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'switch'
-      poz << Tree::TreeNode.new("switch(#{i})", 'switch')
+      poz << Tree::TreeNode.new("switch(#{i})", {oper: 'switch', lvl: @lvl})
       data[i].each do |key, value|
         if key.to_s.include?('id') || key.to_s.include?('num')
           @switch_value = { value: value, str: i, key: convert_key(key.to_s) }
@@ -222,7 +223,7 @@ module TreeFormator
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'case'
-      poz << Tree::TreeNode.new("case(#{i})", 'case')
+      poz << Tree::TreeNode.new("case(#{i})", {oper: 'case', lvl: @lvl})
       poz = down_poz(poz)
       poz << Tree::TreeNode.new('Compare: ==', '==')
       poz = down_poz(poz)
@@ -230,10 +231,10 @@ module TreeFormator
                                 { key: @switch_value[:key], val: @switch_value[:value], lvl: @lvl })
       poz << Tree::TreeNode.new("variable(#{i}): #{search_num_or_id(data, i)[:val]}", search_num_or_id(data, i))
       poz = up_poz(poz)
-      poz << Tree::TreeNode.new('case-body', 'case-body')
+      poz << Tree::TreeNode.new('case-body', {oper: 'case-body', lvl: @lvl})
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'default'
-      poz << Tree::TreeNode.new("default(#{i})", 'case')
+      poz << Tree::TreeNode.new("default(#{i})", {oper: 'default', lvl: @lvl})
       poz = down_poz(poz)
       poz << Tree::TreeNode.new('default-body', 'default-body')
       poz = down_poz(poz)
