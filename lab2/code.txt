@@ -1,7 +1,10 @@
+int i = 1 ;
+int b = 1 ;
+
+
 if (i > 2343) {
     if (i < 2)
         i = i + 2 ;
-    int i = 1 ;
 } else {
     i = 11 - 2;
     i = b + 11 / 1;

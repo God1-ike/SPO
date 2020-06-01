@@ -6,5 +6,5 @@ class String
   def contains_a_if?() (self =~ /if \( [0-9\w]* (==|<=|>=|>|<) [0-9\w]* \)/) end
   def contains_a_else?() (self =~ /else/) end
   def contains_a_default?() (self =~ /default :/) end
-  def contains_a_id?() (self =~ /[D_$]\w*/) end
+  def contains_a_id?() (self =~ /^[a-zA-Z_$][a-zA-Z]*/) end
 end
