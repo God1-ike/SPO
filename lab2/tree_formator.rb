@@ -55,8 +55,6 @@ module TreeFormator
     if data[i].value?('{')
       @size_lvl.push(poz: 'more', compl: false)
       @if_counter.push(false)
-    elsif data[i].value?('if') || data[i].value?('else')
-      @size_lvl.push(poz: 'one', compl: false)
     end
   end
 
@@ -71,21 +69,6 @@ module TreeFormator
       poz = up_poz(poz) unless data[i].value?('else')
     else
       @errors.push("Ошибка в строке #{i + 1}, отсутствует операция ")
-    end
-    poz
-  end
-
-  # если посленее условие было без ковычек, и оно было выполнено, то чистит
-  # историю данного условия, иначе помещает как выполенео
-  def self.one_string_compl(poz, data, i)
-    if @size_lvl.last[:poz] == 'one'
-      if @size_lvl.last[:compl] == true
-        poz = up_poz(poz)
-        @size_lvl.pop(1)
-        poz = up_poz(poz) unless data[i].value?('else')
-      else
-        @size_lvl.last[:compl] = true
-      end
     end
     poz
   end
@@ -172,13 +155,9 @@ module TreeFormator
   def self.node_create(data, i, poz)
     return -1 if i == data.size
 
-    p @lvl
-
     poz = clouse_delimeter(poz, data, i) if data[i].value?('}')
     opening_curly(data, i)
     check_syntax(data, i)
-    poz = one_string_compl(poz, data, i) unless @size_lvl.empty?
-
     if data[i].empty?
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'if'
@@ -257,7 +236,7 @@ module TreeFormator
   def self.format(data)
     root_node = Tree::TreeNode.new('ROOT', { val: 'Содержимое ROOT' })
     node_create(data, 0, root_node)
-    @errors = VarChecking.check(root_node)
+    # @errors = VarChecking.check(root_node)
     if @errors.empty?
       root_node.print_tree
       root_node

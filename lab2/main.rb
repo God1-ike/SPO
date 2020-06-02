@@ -33,7 +33,7 @@ def run
     file.close
     # out(result)
     tree = TreeFormator.format(result)
-    LWIQA.convert(tree)
+    LWIQA.convert(tree) if tree.class == Tree::TreeNode
   end
 end
 

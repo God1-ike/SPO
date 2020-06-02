@@ -33,19 +33,18 @@ module LWIQA
       str += val[i]
       str += oper[i] unless oper[i].nil?
     end
-    p str
+    puts str
   end
 
   def self.add_condition(tree)
     chld = tree.children
     val = chld[0].children
-    p "#{' ' * tree.content[:lvl]}Q::IF #{id_num(val[0].content)} #{chld[0].content[:conditional_operator]} #{id_num(val[1].content)}"
-    # if @lvl[1] <
+    puts "#{' ' * tree.content[:lvl]}Q::IF #{id_num(val[0].content)} #{chld[0].content[:conditional_operator]} #{id_num(val[1].content)}"
   end
 
   def self.add_var(tree)
     chld = tree.children
-    p "#{' ' * tree.content[:lvl]}Q::#{id_num(chld[0].content)} := #{id_num(chld[1].content)}"
+    puts "#{' ' * tree.content[:lvl]}Q::#{id_num(chld[0].content)} := #{id_num(chld[1].content)}"
   end
 
   def self.convert(tree)
