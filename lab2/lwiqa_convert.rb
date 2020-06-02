@@ -44,7 +44,9 @@ module LWIQA
 
   def self.add_var(tree)
     chld = tree.children
-    puts "#{' ' * tree.content[:lvl]}Q::#{id_num(chld[0].content)} := #{id_num(chld[1].content)}"
+    puts "#{' ' * tree.content[:lvl]}Q::#{id_num(chld[0].content)}"
+    puts "#{' ' * (tree.content[:lvl] + 2)}A::#{id_num(chld[1].content)}"
+    
   end
 
   def self.convert(tree)
