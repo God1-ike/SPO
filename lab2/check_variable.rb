@@ -37,7 +37,7 @@ module VarChecking
 
   def self.in_array?(id_variable, node)
     id_variable.each do |hash|
-      if hash.has_key?(node.content[:val])
+      if hash.key?(node.content[:val])
         @errors.push("Данная перменная(#{node.content[:val]}) уже объявлена строка: #{node.content[:str]}")
         return false
       end

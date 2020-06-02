@@ -171,6 +171,7 @@ module TreeFormator
   # формирует в зависимости от этого ствою часть деревакги
   def self.node_create(data, i, poz)
     return -1 if i == data.size
+
     p @lvl
 
     poz = clouse_delimeter(poz, data, i) if data[i].value?('}')
@@ -181,28 +182,28 @@ module TreeFormator
     if data[i].empty?
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'if'
-      poz << Tree::TreeNode.new("if(#{i + 1})", {oper:'if', lvl: @lvl})
+      poz << Tree::TreeNode.new("if(#{i + 1})", { oper: 'if', lvl: @lvl })
       poz = down_poz(poz)
       poz << Tree::TreeNode.new("Compare: #{data[i][:conditional_operator]}",
                                 { conditional_operator: data[i][:conditional_operator] })
       poz = down_poz(poz)
       search_variable(data, i, poz)
       poz = up_poz(poz)
-      poz << Tree::TreeNode.new('if-body', {oper: 'if-body', lvl: @lvl})
+      poz << Tree::TreeNode.new('if-body', { oper: 'if-body', lvl: @lvl })
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'else'
-      poz << Tree::TreeNode.new('else-body', {oper: 'else-body', lvl: @lvl})
+      poz << Tree::TreeNode.new('else-body', { oper: 'else-body', lvl: @lvl })
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i].key?(:type)
-      poz << Tree::TreeNode.new("#{data[i][:type]}(#{i})", {oper: data[i][:type], lvl: @lvl})
+      poz << Tree::TreeNode.new("#{data[i][:type]}(#{i})", { oper: data[i][:type], lvl: @lvl })
       poz = down_poz(poz)
       search_variable(data, i, poz)
       poz = up_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i].key?(:assignment_operation)
-      poz << Tree::TreeNode.new("assign(#{i})", {oper: 'assign', lvl: @lvl})
+      poz << Tree::TreeNode.new("assign(#{i})", { oper: 'assign', lvl: @lvl })
       poz = down_poz(poz)
       poz << Tree::TreeNode.new("variable(#{i}): #{data[i][:id_0]}", { key: 'id', val: data[i][:id_0], lvl: @lvl, str: i })
       tmp = arifmetic(data, i, poz, i)
@@ -214,7 +215,7 @@ module TreeFormator
       poz = up_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'switch'
-      poz << Tree::TreeNode.new("switch(#{i})", {oper: 'switch', lvl: @lvl})
+      poz << Tree::TreeNode.new("switch(#{i})", { oper: 'switch', lvl: @lvl })
       data[i].each do |key, value|
         if key.to_s.include?('id') || key.to_s.include?('num')
           @switch_value = { value: value, str: i, key: convert_key(key.to_s) }
@@ -224,21 +225,21 @@ module TreeFormator
 
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'case'
-      poz << Tree::TreeNode.new("case(#{i})", {oper: 'case', lvl: @lvl})
+      poz << Tree::TreeNode.new("case(#{i})", { oper: 'case', lvl: @lvl })
       poz = down_poz(poz)
-      poz << Tree::TreeNode.new('Compare: ==', {conditional_operator: '=='})
+      poz << Tree::TreeNode.new('Compare: ==', { conditional_operator: '==' })
       poz = down_poz(poz)
       poz << Tree::TreeNode.new("variable(#{@switch_value[:str]}): #{@switch_value[:value]}",
                                 { key: @switch_value[:key], val: @switch_value[:value], lvl: @lvl })
       poz << Tree::TreeNode.new("variable(#{i}): #{search_num_or_id(data, i)[:val]}", search_num_or_id(data, i))
       poz = up_poz(poz)
-      poz << Tree::TreeNode.new('case-body', {oper: 'case-body', lvl: @lvl})
+      poz << Tree::TreeNode.new('case-body', { oper: 'case-body', lvl: @lvl })
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'default'
-      poz << Tree::TreeNode.new("default(#{i})", {oper: 'default', lvl: @lvl})
+      poz << Tree::TreeNode.new("default(#{i})", { oper: 'default', lvl: @lvl })
       poz = down_poz(poz)
-      poz << Tree::TreeNode.new('default-body', {oper: 'default-body', lvl: @lvl})
+      poz << Tree::TreeNode.new('default-body', { oper: 'default-body', lvl: @lvl })
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'break'
@@ -254,7 +255,7 @@ module TreeFormator
   end
 
   def self.format(data)
-    root_node = Tree::TreeNode.new('ROOT', {val:'Содержимое ROOT'})
+    root_node = Tree::TreeNode.new('ROOT', { val: 'Содержимое ROOT' })
     node_create(data, 0, root_node)
     @errors = VarChecking.check(root_node)
     if @errors.empty?

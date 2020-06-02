@@ -5,7 +5,6 @@ require './lex_analyzer.rb'
 require './tree_formator.rb'
 require './lwiqa_convert.rb'
 
-
 def self.check?
   file = File.new('code.txt')
   d = file.read

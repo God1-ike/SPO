@@ -49,6 +49,7 @@ module LWIQA
   end
 
   def self.convert(tree)
+    $stdout = File.open('LWIQA.txt', 'w')
     tree.each do |node|
       if node.content.class == Hash
         if node.content[:oper] == 'int'
@@ -56,7 +57,7 @@ module LWIQA
         elsif node.content[:oper] == 'if'
           add_condition(node)
         elsif node.content[:oper] == 'case'
-            add_condition(node)
+          add_condition(node)
         elsif node.content[:oper] == 'assign'
           add_assign(node)
         end
