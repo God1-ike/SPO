@@ -31,7 +31,7 @@ def run
       # result.pop(1) if result.last.empty?
     end
     file.close
-    # out(result)
+    out(result)
     tree = TreeFormator.format(result)
     LWIQA.convert(tree) if tree.class == Tree::TreeNode
   end

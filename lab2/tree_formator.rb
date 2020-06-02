@@ -236,12 +236,13 @@ module TreeFormator
   def self.format(data)
     root_node = Tree::TreeNode.new('ROOT', { val: 'Содержимое ROOT' })
     node_create(data, 0, root_node)
-    # @errors = VarChecking.check(root_node)
+    @errors = VarChecking.check(root_node)
     if @errors.empty?
+      puts '----------------------'
       root_node.print_tree
       root_node
     else
-      puts @errors
+      puts '----------------------', @errors
     end
   end
 end
