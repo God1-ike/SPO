@@ -2,16 +2,24 @@ Q::&b&
   A::1
 Q::&i&
   A::1
-Q::IF &i& > 2343
-  Q::IF &i& < 2
+Q::IF &i& > 2343 THEN BEGIN
+  Q::IF &i& < 2 THEN BEGIN
     Q::&i& :=  &i& + 2
     Q::&i& :=  &b& + 11 / 1
+    Q::END ELSE BEGIN
     Q::&i& :=  &b& + 11 / 1
     Q::&i& :=  &i& + 2
+    Q::END
+  Q::END ELSE BEGIN
   Q::&i& :=  11 - 2
   Q::&i& :=  &b& + 11 / 1
-Q::IF 2 == 1
+  Q::END
+Q::IF 2 == 1 THEN BEGIN
   Q::&i& :=  2 + 3
-Q::IF 2 == 2
+  Q::END
+Q::IF 2 == 2 THEN BEGIN
   Q::&i& :=  2 + 3
+  Q::END
+Q::END ELSE BEGIN
   Q::&i& :=  2 + 3
+  Q::END

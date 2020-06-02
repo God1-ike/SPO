@@ -4,7 +4,7 @@ require 'tree'
 
 module LWIQA
   @res = ''
-  @lvl = [0, 0]
+  @if_count = []
 
   def self.id_num(node)
     if node[:key] == 'id'
@@ -39,30 +39,52 @@ module LWIQA
   def self.add_condition(tree)
     chld = tree.children
     val = chld[0].children
-    puts "#{' ' * tree.content[:lvl]}Q::IF #{id_num(val[0].content)} #{chld[0].content[:conditional_operator]} #{id_num(val[1].content)}"
+    puts "#{' ' * tree.content[:lvl]}Q::IF #{id_num(val[0].content)} #{chld[0].content[:conditional_operator]} #{id_num(val[1].content)} THEN BEGIN"
+    @if_count.push(tree.content)
+  end
+
+  def self.add_else(tree)
+    lvl = if tree.content[:oper] == 'else-body'
+            tree.content[:lvl] + 1
+          else
+            @if_count.push(tree.content)
+            tree.content[:lvl]
+          end
+    puts "#{' ' * lvl}Q::END ELSE BEGIN"
   end
 
   def self.add_var(tree)
     chld = tree.children
     puts "#{' ' * tree.content[:lvl]}Q::#{id_num(chld[0].content)}"
     puts "#{' ' * (tree.content[:lvl] + 2)}A::#{id_num(chld[1].content)}"
-    
+  end
+
+  def self.lvl_compl?(node)
+    unless @if_count.empty?
+      if node.has_key?(:lvl) && @if_count[-1][:lvl] >= node[:lvl]
+        puts "#{' ' * (@if_count[-1][:lvl] + 2)}Q::END"
+        @if_count.pop
+      end
+    end
   end
 
   def self.convert(tree)
     $stdout = File.open('LWIQA.txt', 'w')
     tree.each do |node|
       if node.content.class == Hash
+        lvl_compl?(node.content)
         if node.content[:oper] == 'int'
           add_var(node)
-        elsif node.content[:oper] == 'if'
+        elsif node.content[:oper] == 'if' || node.content[:oper] == 'case'
           add_condition(node)
-        elsif node.content[:oper] == 'case'
-          add_condition(node)
+        elsif node.content[:oper] == 'else-body' || node.content[:oper] == 'default'
+          add_else(node)
         elsif node.content[:oper] == 'assign'
           add_assign(node)
         end
       end
     end
+    puts "#{' ' * (@if_count[-1][:lvl] + 2)}Q::END" unless @if_count.empty?
   end
+ 
 end
