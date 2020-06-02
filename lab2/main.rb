@@ -3,6 +3,8 @@
 require 'tree'
 require './lex_analyzer.rb'
 require './tree_formator.rb'
+require './lwiqa_convert.rb'
+
 
 def self.check?
   file = File.new('code.txt')
@@ -31,7 +33,8 @@ def run
     end
     file.close
     # out(result)
-    TreeFormator.format(result)
+    tree = TreeFormator.format(result)
+    LWIQA.convert(tree)
   end
 end
 

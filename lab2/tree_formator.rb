@@ -57,7 +57,6 @@ module TreeFormator
       @if_counter.push(false)
     elsif data[i].value?('if') || data[i].value?('else')
       @size_lvl.push(poz: 'one', compl: false)
-      @if_counter.push(false)
     end
   end
 
@@ -69,7 +68,6 @@ module TreeFormator
     elsif @size_lvl.last[:poz] == 'more'
       poz = up_poz(poz)
       @size_lvl.pop(1)
-      @if_counter.pop(1)
       poz = up_poz(poz) unless data[i].value?('else')
     else
       @errors.push("Ошибка в строке #{i + 1}, отсутствует операция ")
@@ -81,7 +79,7 @@ module TreeFormator
   # историю данного условия, иначе помещает как выполенео
   def self.one_string_compl(poz, data, i)
     if @size_lvl.last[:poz] == 'one'
-      if @size_lvl.last[:compl]
+      if @size_lvl.last[:compl] == true
         poz = up_poz(poz)
         @size_lvl.pop(1)
         poz = up_poz(poz) unless data[i].value?('else')
@@ -173,11 +171,13 @@ module TreeFormator
   # формирует в зависимости от этого ствою часть деревакги
   def self.node_create(data, i, poz)
     return -1 if i == data.size
+    p @lvl
 
     poz = clouse_delimeter(poz, data, i) if data[i].value?('}')
     opening_curly(data, i)
     check_syntax(data, i)
     poz = one_string_compl(poz, data, i) unless @size_lvl.empty?
+
     if data[i].empty?
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'if'
@@ -220,27 +220,31 @@ module TreeFormator
           @switch_value = { value: value, str: i, key: convert_key(key.to_s) }
         end
       end
-      poz = down_poz(poz)
+      poz = poz.children[-1]
+
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'case'
       poz << Tree::TreeNode.new("case(#{i})", {oper: 'case', lvl: @lvl})
       poz = down_poz(poz)
-      poz << Tree::TreeNode.new('Compare: ==', '==')
+      poz << Tree::TreeNode.new('Compare: ==', {conditional_operator: '=='})
       poz = down_poz(poz)
       poz << Tree::TreeNode.new("variable(#{@switch_value[:str]}): #{@switch_value[:value]}",
                                 { key: @switch_value[:key], val: @switch_value[:value], lvl: @lvl })
       poz << Tree::TreeNode.new("variable(#{i}): #{search_num_or_id(data, i)[:val]}", search_num_or_id(data, i))
       poz = up_poz(poz)
       poz << Tree::TreeNode.new('case-body', {oper: 'case-body', lvl: @lvl})
+      poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'default'
       poz << Tree::TreeNode.new("default(#{i})", {oper: 'default', lvl: @lvl})
       poz = down_poz(poz)
-      poz << Tree::TreeNode.new('default-body', 'default-body')
+      poz << Tree::TreeNode.new('default-body', {oper: 'default-body', lvl: @lvl})
       poz = down_poz(poz)
       node_create(data, i + 1, poz)
     elsif data[i][:operator] == 'break'
       poz = up_poz(poz)
+      poz = up_poz(poz)
+
       node_create(data, i + 1, poz)
     elsif data[i].value?('}')
       node_create(data, i + 1, poz)
@@ -250,11 +254,12 @@ module TreeFormator
   end
 
   def self.format(data)
-    root_node = Tree::TreeNode.new('ROOT', 'Содержимое ROOT')
+    root_node = Tree::TreeNode.new('ROOT', {val:'Содержимое ROOT'})
     node_create(data, 0, root_node)
     @errors = VarChecking.check(root_node)
     if @errors.empty?
       root_node.print_tree
+      root_node
     else
       puts @errors
     end

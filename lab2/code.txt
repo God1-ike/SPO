@@ -2,8 +2,13 @@ int b = 1 ;
 int i = 1 ;
 
 if (i > 2343) {
-    if (i < 2)
+    if (i < 2){
         i = i + 2 ;
+        i = b + 11 / 1;
+    } else {
+        i = b + 11 / 1;
+        i = i + 2 ;
+    }
 } else {
     i = 11 - 2;
     i = b + 11 / 1;
@@ -20,6 +25,3 @@ switch (2){
         i = 2 + 3;
         break;
 }
-
-if (i < 2)
-    i = i + 2 ;
