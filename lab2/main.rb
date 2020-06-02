@@ -28,7 +28,6 @@ def run
     file = File.new('code.txt')
     file.each do |line|
       result.push(LexAnalyzer.analyze(line))
-      # result.pop(1) if result.last.empty?
     end
     file.close
     out(result)
