@@ -16,6 +16,8 @@ if (i > 2343) {
     
 switch (2){
     case 1:
+       
+
         i = 2 + 3;
         break;
     case 2:

@@ -11,6 +11,7 @@ module TreeFormator
   @switch_value = {}
   @lvl = 0
 
+  # проверка введенной команды на валидность
   def self.check_syntax(data, i)
     return 0 if (data[i][:delimiter_1] == '}' && data[i].size == 1) || data[i].empty?
 
@@ -134,6 +135,7 @@ module TreeFormator
     { key: keys[0], val: values[0], lvl: @lvl, str: str }
   end
 
+  # преобразование ключа в единую ситему без нумераций
   def self.convert_key(key)
     if key.to_s.include?('id')
       'id'
@@ -142,6 +144,7 @@ module TreeFormator
     end
   end
 
+  # определение является ли данная лексема числом или переменной
   def self.search_num_or_id(data, i)
     if data[i].key?(:num_0)
       { key: 'num', val: data[i][:num_0], lvl: @lvl }
@@ -236,7 +239,7 @@ module TreeFormator
   def self.format(data)
     root_node = Tree::TreeNode.new('ROOT', { val: 'Содержимое ROOT' })
     node_create(data, 0, root_node)
-    @errors = VarChecking.check(root_node)
+    @errors += VarChecking.check(root_node)
     if @errors.empty?
       puts '----------------------'
       root_node.print_tree

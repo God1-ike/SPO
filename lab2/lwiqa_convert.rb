@@ -6,6 +6,7 @@ module LWIQA
   @res = ''
   @if_count = []
 
+  # преобразовывает для вывода переменную и число
   def self.id_num(node)
     if node[:key] == 'id'
       "&#{node[:val]}&"
@@ -14,6 +15,7 @@ module LWIQA
     end
   end
 
+  # формирует вывод для арифметической операции
   def self.add_assign(tree)
     str = ''
     child = tree.children
@@ -36,6 +38,7 @@ module LWIQA
     puts str
   end
 
+  # формирует вывод для условия
   def self.add_condition(tree)
     chld = tree.children
     val = chld[0].children
@@ -43,6 +46,7 @@ module LWIQA
     @if_count.push(tree.content)
   end
 
+  # добавление строки для else и default
   def self.add_else(tree)
     lvl = if tree.content[:oper] == 'else-body'
             tree.content[:lvl] + 1
@@ -53,6 +57,7 @@ module LWIQA
     puts "#{' ' * lvl}Q::END ELSE BEGIN"
   end
 
+  # объявление новой переменной
   def self.add_var(tree)
     chld = tree.children
     puts "#{' ' * tree.content[:lvl]}Q::#{id_num(chld[0].content)}"
